@@ -31,14 +31,15 @@ func returnArticle(w http.ResponseWriter, req *http.Request) {
 
 	if len(articles) == 0 {
 		msg := "Failure article with ID does not exist"
+		code := 200
 		enf := errorhandlers.ErrNotFound{
 			Url:     req.URL.String(),
-			Code:    400,
+			Code:    code,
 			Message: msg,
 		}
 		log.Println("enf: ", enf)
 
-		articlesResponse(msg, 400, articles, w)
+		articlesResponse(msg, code, articles, w)
 		return
 	}
 
@@ -62,7 +63,7 @@ func insertArticle(w http.ResponseWriter, req *http.Request) {
 	err := json.NewDecoder(req.Body).Decode(&a)
 	errorhandlers.CheckError(err)
 
-	qryTxt := `insert into "article"(title, article_description, content) values($1, $2, $3) RETURNING *`
+	qryTxt := `insert into "article"(articletitle, articledesc, articlecontent) values($1, $2, $3) RETURNING *`
 	result, err2 := db.PsqlDB.Query(qryTxt, a.Title, a.Desc, a.Content)
 	errorhandlers.CheckError(err2)
 
