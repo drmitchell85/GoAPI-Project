@@ -1,6 +1,8 @@
 package errorhandlers
 
-import "fmt"
+import (
+	"fmt"
+)
 
 type ErrNotFound struct {
 	Url     string
