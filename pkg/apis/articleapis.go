@@ -3,11 +3,8 @@ package apis
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
-
-	errorhandlers "goapiproject.com/pkg/error"
 )
 
 func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
@@ -29,15 +26,7 @@ func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
 
 	if len(articles) == 0 {
 		msg := fmt.Sprintf("Failure article with ID %s does not exist", article_id)
-		code := 200
-		enf := errorhandlers.ErrNotFound{
-			Url:     req.URL.String(),
-			Code:    code,
-			Message: msg,
-		}
-		log.Println("enf: ", enf)
-
-		articlesResponse(msg, code, articles, w)
+		articlesResponse(msg, 200, articles, w)
 		return
 	}
 
