@@ -18,9 +18,3 @@ func (enf ErrNotFound) Error() string {
 		enf.Message,
 	)
 }
-
-func CheckError(err error) {
-	if err != nil {
-		panic(err)
-	}
-}

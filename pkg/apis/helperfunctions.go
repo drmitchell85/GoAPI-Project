@@ -8,7 +8,6 @@ import (
 	"net/http"
 
 	"goapiproject.com/pkg/db"
-	errorhandlers "goapiproject.com/pkg/error"
 )
 
 type Article struct {
@@ -66,7 +65,10 @@ func articlesResponse(status string, code int, articles []Article, w http.Respon
 	}
 
 	out, err := json.Marshal(response)
-	errorhandlers.CheckError(err)
+	if err != nil {
+		articlesErrResponse("error encoding response: %s", err, articles, w)
+		return
+	}
 
 	fmt.Fprintln(w, string(out))
 }
