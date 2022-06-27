@@ -10,9 +10,9 @@ import (
 
 func HandleRequests() {
 	http.HandleFunc("/", HomePage)
-	http.HandleFunc("/articles/list", returnAllArticles)
-	http.HandleFunc("/articles/fetch", returnArticle)
-	http.HandleFunc("/articles/insert", insertArticle)
+	http.HandleFunc("/articles/list", getAllArticlesAPI)
+	http.HandleFunc("/articles/fetch", getArticleByIdAPI)
+	http.HandleFunc("/articles/insert", insertArticleAPI)
 	log.Fatal(http.ListenAndServe(":10000", nil))
 }
 

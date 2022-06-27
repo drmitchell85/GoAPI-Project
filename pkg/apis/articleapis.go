@@ -3,72 +3,74 @@ package apis
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
-
-	"goapiproject.com/pkg/db"
-	errorhandlers "goapiproject.com/pkg/error"
 )
 
-func returnArticle(w http.ResponseWriter, req *http.Request) {
-	fmt.Println("running returnArticle...")
+func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
 	urlArray := strings.Split(req.URL.String(), "=")
 	article_id := urlArray[len(urlArray)-1]
+	var articles []Article
 
-	qryTxt := `SELECT * FROM article WHERE article_id = $1`
+	result, err := getArticleByID(article_id)
+	if err != nil {
+		articlesErrResponse("error getting article by ID: %s", err, articles, w)
+		return
+	}
 
-	fmt.Println("running query...")
-
-	result, err := db.PsqlDB.Query(qryTxt, article_id)
-	fmt.Println("query err: ", err)
-	errorhandlers.CheckError(err)
-
-	fmt.Println("scanning articles...")
-
-	articles, error := scanArticles(result)
-	errorhandlers.CheckError(error)
+	articles, err = scanArticles(result)
+	if err != nil {
+		articlesErrResponse("error scanning articles: %s", err, articles, w)
+		return
+	}
 
 	if len(articles) == 0 {
-		msg := "Failure article with ID does not exist"
-		code := 200
-		enf := errorhandlers.ErrNotFound{
-			Url:     req.URL.String(),
-			Code:    code,
-			Message: msg,
-		}
-		log.Println("enf: ", enf)
-
-		articlesResponse(msg, code, articles, w)
+		msg := fmt.Sprintf("Failure article with ID %s does not exist", article_id)
+		articlesResponse(msg, 200, articles, w)
 		return
 	}
 
 	articlesResponse("Success", 200, articles, w)
 }
 
-func returnAllArticles(w http.ResponseWriter, req *http.Request) {
-	qryTxt := `SELECT * FROM article`
-	rows, err := db.PsqlDB.Query(qryTxt)
-	errorhandlers.CheckError(err)
+func getAllArticlesAPI(w http.ResponseWriter, req *http.Request) {
+	var articles []Article
+	rows, err := getAllArticles()
+	if err != nil {
+		articlesErrResponse("error retrieving aricles: %s", err, articles, w)
+		return
+	}
 	defer rows.Close()
 
-	articles, error := scanArticles(rows)
-	errorhandlers.CheckError(error)
+	articles, err = scanArticles(rows)
+	if err != nil {
+		articlesErrResponse("error scanning articles: %s", err, articles, w)
+		return
+	}
 
 	articlesResponse("Success", 200, articles, w)
 }
 
-func insertArticle(w http.ResponseWriter, req *http.Request) {
+func insertArticleAPI(w http.ResponseWriter, req *http.Request) {
 	var a Article
+	var articles []Article
 	err := json.NewDecoder(req.Body).Decode(&a)
-	errorhandlers.CheckError(err)
+	if err != nil {
+		articlesErrResponse("error decoding body: %s", err, articles, w)
+		return
+	}
 
-	qryTxt := `insert into "article"(articletitle, articledesc, articlecontent) values($1, $2, $3) RETURNING *`
-	result, err2 := db.PsqlDB.Query(qryTxt, a.Title, a.Desc, a.Content)
-	errorhandlers.CheckError(err2)
+	result, err := insertArticle(a)
+	if err != nil {
+		articlesErrResponse("error inserting article: %s", err, articles, w)
+		return
+	}
 
-	articles, error := scanArticles(result)
-	errorhandlers.CheckError(error)
+	articles, err = scanArticles(result)
+	if err != nil {
+		articlesErrResponse("error scanning articles: %s", err, articles, w)
+		return
+	}
 
 	articlesResponse("Success", 200, articles, w)
 }

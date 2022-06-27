@@ -4,9 +4,10 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
-	errorhandlers "goapiproject.com/pkg/error"
+	"goapiproject.com/pkg/db"
 )
 
 type Article struct {
@@ -21,6 +22,24 @@ type ArticleResponse struct {
 	Code     int
 	Count    int
 	Articles []Article
+}
+
+func getAllArticles() (*sql.Rows, error) {
+	qryTxt := `SELECT * FROM article`
+	rows, err := db.PsqlDB.Query(qryTxt)
+	return rows, err
+}
+
+func getArticleByID(article_id string) (*sql.Rows, error) {
+	qryTxt := `SELECT * FROM article WHERE article_id = $1`
+	result, err := db.PsqlDB.Query(qryTxt, article_id)
+	return result, err
+}
+
+func insertArticle(a Article) (*sql.Rows, error) {
+	qryTxt := `INSERT into "article"(articletitle, articledesc, articlecontent) VALUES($1, $2, $3) RETURNING *`
+	result, err := db.PsqlDB.Query(qryTxt, a.Title, a.Desc, a.Content)
+	return result, err
 }
 
 func scanArticles(rows *sql.Rows) ([]Article, error) {
@@ -46,7 +65,16 @@ func articlesResponse(status string, code int, articles []Article, w http.Respon
 	}
 
 	out, err := json.Marshal(response)
-	errorhandlers.CheckError(err)
+	if err != nil {
+		articlesErrResponse("error encoding response: %s", err, articles, w)
+		return
+	}
 
-	fmt.Fprintf(w, string(out))
+	fmt.Fprintln(w, string(out))
+}
+
+func articlesErrResponse(msg string, err error, articles []Article, w http.ResponseWriter) {
+	msgFmt := fmt.Sprintf(msg, err)
+	log.Println(msgFmt)
+	articlesResponse(msg, 400, articles, w)
 }
