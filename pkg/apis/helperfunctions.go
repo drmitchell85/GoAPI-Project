@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-
-	"goapiproject.com/pkg/db"
 )
 
 type Article struct {
@@ -24,21 +22,22 @@ type ArticleResponse struct {
 	Articles []Article
 }
 
-func getAllArticles() (*sql.Rows, error) {
+func getAllArticles(db *sql.DB) (*sql.Rows, error) {
 	qryTxt := `SELECT * FROM article`
-	rows, err := db.PsqlDB.Query(qryTxt)
+	rows, err := db.Query(qryTxt)
 	return rows, err
 }
 
-func getArticleByID(article_id string) (*sql.Rows, error) {
+// func getArticleByID(article_id string) (*sql.Rows, error) {
+func getArticleByID(article_id string, db *sql.DB) (*sql.Rows, error) {
 	qryTxt := `SELECT * FROM article WHERE article_id = $1`
-	result, err := db.PsqlDB.Query(qryTxt, article_id)
+	result, err := db.Query(qryTxt, article_id)
 	return result, err
 }
 
-func insertArticle(a Article) (*sql.Rows, error) {
+func insertArticle(a Article, db *sql.DB) (*sql.Rows, error) {
 	qryTxt := `INSERT into "article"(articletitle, articledesc, articlecontent) VALUES($1, $2, $3) RETURNING *`
-	result, err := db.PsqlDB.Query(qryTxt, a.Title, a.Desc, a.Content)
+	result, err := db.Query(qryTxt, a.Title, a.Desc, a.Content)
 	return result, err
 }
 

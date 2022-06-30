@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+
+	"goapiproject.com/pkg/db"
 )
 
 func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
@@ -12,7 +14,7 @@ func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
 	article_id := urlArray[len(urlArray)-1]
 	var articles []Article
 
-	result, err := getArticleByID(article_id)
+	result, err := getArticleByID(article_id, db.PsqlDB)
 	if err != nil {
 		articlesErrResponse("error getting article by ID: %s", err, articles, w)
 		return
@@ -35,7 +37,7 @@ func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
 
 func getAllArticlesAPI(w http.ResponseWriter, req *http.Request) {
 	var articles []Article
-	rows, err := getAllArticles()
+	rows, err := getAllArticles(db.PsqlDB)
 	if err != nil {
 		articlesErrResponse("error retrieving aricles: %s", err, articles, w)
 		return
@@ -60,7 +62,7 @@ func insertArticleAPI(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := insertArticle(a)
+	result, err := insertArticle(a, db.PsqlDB)
 	if err != nil {
 		articlesErrResponse("error inserting article: %s", err, articles, w)
 		return
