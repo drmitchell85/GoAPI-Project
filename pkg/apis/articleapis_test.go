@@ -104,22 +104,32 @@ func TestGetAllArticlesAPI(t *testing.T) {
 	assert.ElementsMatch(t, as, response.Articles)
 }
 
-func TestGetArticleByID(t *testing.T) {
+func TestGetArticleByIDAPI(t *testing.T) {
 	db, mock := NewMock()
-
 	qryTxt := `SELECT * FROM article WHERE article_id = $1`
-
 	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
-		AddRow(a1.Id, a1.Title, a1.Desc, a1.Title)
-
+		AddRow(as[0].Id, as[0].Title, as[0].Desc, as[0].Title).
+		AddRow(as[1].Id, as[1].Title, as[1].Desc, as[1].Title)
 	mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(a1.Id).WillReturnRows(rows)
 
-	article, err := getArticleByID(a1.Id, db)
-	assert.NotNil(t, article)
-	assert.NoError(t, err)
+	req, err := http.NewRequest("GET", "/articles/list?id=art_1", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-	scan, err := scanArticles(article)
-	assert.NotNil(t, scan)
-	assert.NoError(t, err)
-	assert.Equal(t, a1.Id, scan[0].Id)
+	rr := httptest.NewRecorder()
+	handlers := dbStruct{db}
+	handler := http.HandlerFunc(handlers.getArticleByIdAPI)
+	handler.ServeHTTP(rr, req)
+
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("expected: %v, received: %v", http.StatusOK, status)
+	}
+
+	strBody := rr.Body.String()
+	response := ArticleResponse{}
+	json.Unmarshal([]byte(strBody), &response)
+
+	assert.EqualValues(t, 2, response.Count)
+	assert.Equal(t, a1.Id, response.Articles[0].Id)
 }
