@@ -28,7 +28,6 @@ func getAllArticles(db *sql.DB) (*sql.Rows, error) {
 	return rows, err
 }
 
-// func getArticleByID(article_id string) (*sql.Rows, error) {
 func getArticleByID(article_id string, db *sql.DB) (*sql.Rows, error) {
 	qryTxt := `SELECT * FROM article WHERE article_id = $1`
 	result, err := db.Query(qryTxt, article_id)

@@ -1,20 +1,30 @@
 package apis
 
 import (
+	"database/sql"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
-
-	"goapiproject.com/pkg/db"
 )
 
-func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
+type dbStruct struct {
+	db *sql.DB
+}
+
+func (d dbStruct) health(w http.ResponseWriter, req *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
+	io.WriteString(w, `{"alive": true}`)
+}
+
+func (d dbStruct) getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
 	urlArray := strings.Split(req.URL.String(), "=")
 	article_id := urlArray[len(urlArray)-1]
 	var articles []Article
 
-	result, err := getArticleByID(article_id, db.PsqlDB)
+	result, err := getArticleByID(article_id, d.db)
 	if err != nil {
 		articlesErrResponse("error getting article by ID: %s", err, articles, w)
 		return
@@ -35,9 +45,9 @@ func getArticleByIdAPI(w http.ResponseWriter, req *http.Request) {
 	articlesResponse("Success", 200, articles, w)
 }
 
-func getAllArticlesAPI(w http.ResponseWriter, req *http.Request) {
+func (d dbStruct) getAllArticlesAPI(w http.ResponseWriter, req *http.Request) {
 	var articles []Article
-	rows, err := getAllArticles(db.PsqlDB)
+	rows, err := getAllArticles(d.db)
 	if err != nil {
 		articlesErrResponse("error retrieving aricles: %s", err, articles, w)
 		return
@@ -53,7 +63,7 @@ func getAllArticlesAPI(w http.ResponseWriter, req *http.Request) {
 	articlesResponse("Success", 200, articles, w)
 }
 
-func insertArticleAPI(w http.ResponseWriter, req *http.Request) {
+func (d dbStruct) insertArticleAPI(w http.ResponseWriter, req *http.Request) {
 	var a Article
 	var articles []Article
 	err := json.NewDecoder(req.Body).Decode(&a)
@@ -62,7 +72,7 @@ func insertArticleAPI(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	result, err := insertArticle(a, db.PsqlDB)
+	result, err := insertArticle(a, d.db)
 	if err != nil {
 		articlesErrResponse("error inserting article: %s", err, articles, w)
 		return

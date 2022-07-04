@@ -15,9 +15,7 @@ const (
 	dbname   = "projectonedb"
 )
 
-var PsqlDB *sql.DB
-
-func DbConnection() {
+func DbConnection() *sql.DB {
 
 	connStr := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
 	db, err := sql.Open("postgres", connStr)
@@ -36,7 +34,7 @@ func DbConnection() {
 	insertTables(db)
 
 	fmt.Println("Connected to db")
-	PsqlDB = db
+	return db
 }
 
 func insertDB() {

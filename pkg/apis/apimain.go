@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -8,11 +9,13 @@ import (
 	_ "github.com/lib/pq"
 )
 
-func HandleRequests() {
+func HandleRequests(db *sql.DB) {
+	handlers := dbStruct{db}
 	http.HandleFunc("/", HomePage)
-	http.HandleFunc("/articles/list", getAllArticlesAPI)
-	http.HandleFunc("/articles/fetch", getArticleByIdAPI)
-	http.HandleFunc("/articles/insert", insertArticleAPI)
+	http.HandleFunc("/health", handlers.health)
+	http.HandleFunc("/articles/list", handlers.getAllArticlesAPI)
+	http.HandleFunc("/articles/fetch", handlers.getArticleByIdAPI)
+	http.HandleFunc("/articles/insert", handlers.insertArticleAPI)
 	log.Fatal(http.ListenAndServe(":10000", nil))
 }
 

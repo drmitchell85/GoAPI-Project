@@ -8,6 +8,6 @@ import (
 )
 
 func main() {
-	db.DbConnection()
-	apis.HandleRequests()
+	db := db.DbConnection()
+	apis.HandleRequests(db)
 }
