@@ -27,6 +27,13 @@ var a2 = &Article{
 	Content: "Here is article2 content",
 }
 
+var ia1 = &Article{
+	Id:      "iart_1",
+	Title:   "iTitle",
+	Desc:    "iDesc",
+	Content: "iContent",
+}
+
 var as = []Article{
 	{a1.Id, a1.Title, a1.Desc, a1.Title},
 	{a2.Id, a2.Title, a2.Desc, a2.Title},
@@ -133,3 +140,35 @@ func TestGetArticleByIDAPI(t *testing.T) {
 	assert.EqualValues(t, 2, response.Count)
 	assert.Equal(t, a1.Id, response.Articles[0].Id)
 }
+
+// TODO solve issue of random id val
+// func TestInsertArticleAPI(t *testing.T) {
+// 	db, mock := NewMock()
+// 	qryTxt := `INSERT into "article"(articletitle, articledesc, articlecontent) VALUES($1, $2, $3) RETURNING *`
+
+// 	// TODO: is this the correct way? Am I creating the new rows before even inserting?
+// 	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
+// 		AddRow(ia1.Id, ia1.Title, ia1.Desc, ia1.Content)
+// 	mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(ia1.Title, ia1.Desc, ia1.Content).WillReturnRows(rows)
+
+// 	bdyReader := strings.NewReader(`{"articleTitle": "iTitle", "articleDesc": "iDesc", "articleContent": "iContent"}`)
+// 	req, err := http.NewRequest("POST", "/articles/insert", bdyReader)
+// 	if err != nil {
+// 		t.Fatal(err)
+// 	}
+
+// 	rr := httptest.NewRecorder()
+// 	handlers := dbStruct{db}
+// 	handler := http.HandlerFunc(handlers.insertArticleAPI)
+// 	handler.ServeHTTP(rr, req)
+
+// 	if status := rr.Code; status != http.StatusOK {
+// 		t.Errorf("expected: %v, received: %v", http.StatusOK, status)
+// 	}
+
+// 	strBody := rr.Body.String()
+// 	response := ArticleResponse{}
+// 	json.Unmarshal([]byte(strBody), &response)
+
+// 	// TODO: add assertions
+// }

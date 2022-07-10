@@ -37,6 +37,7 @@ func getArticleByID(article_id string, db *sql.DB) (*sql.Rows, error) {
 func insertArticle(a Article, db *sql.DB) (*sql.Rows, error) {
 	qryTxt := `INSERT into "article"(articletitle, articledesc, articlecontent) VALUES($1, $2, $3) RETURNING *`
 	result, err := db.Query(qryTxt, a.Title, a.Desc, a.Content)
+	fmt.Println("err:", err)
 	return result, err
 }
 
