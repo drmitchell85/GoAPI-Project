@@ -3,6 +3,7 @@ package apis
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -112,32 +113,49 @@ func TestGetAllArticlesAPI(t *testing.T) {
 }
 
 func TestGetArticleByIDAPI(t *testing.T) {
-	db, mock := NewMock()
-	qryTxt := `SELECT * FROM article WHERE article_id = $1`
-	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
-		AddRow(as[0].Id, as[0].Title, as[0].Desc, as[0].Title)
-	mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(a1.Id).WillReturnRows(rows)
-
-	req, err := http.NewRequest("GET", "/articles/fetch?article_id=art_1", nil)
-	if err != nil {
-		t.Fatal(err)
+	tc := []struct {
+		name       string
+		status     string
+		count      int
+		article_id string
+	}{
+		{"PASS", "Success", 1, "art_1"},
+		{"FAIL", "Failure article with ID art_3 does not exist", 0, "art_3"},
 	}
 
-	rr := httptest.NewRecorder()
-	handlers := dbStruct{db}
-	handler := http.HandlerFunc(handlers.getArticleByIdAPI)
-	handler.ServeHTTP(rr, req)
+	for _, test := range tc {
+		db, mock := NewMock()
+		qryTxt := `SELECT * FROM article WHERE article_id = $1`
 
-	if status := rr.Code; status != http.StatusOK {
-		t.Errorf("expected: %v, received: %v", http.StatusOK, status)
+		rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"})
+		if test.name == "PASS" {
+			rows.AddRow(as[0].Id, as[0].Title, as[0].Desc, as[0].Title)
+		}
+
+		mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(test.article_id).WillReturnRows(rows)
+
+		route := fmt.Sprintf("/articles/fetch?article_id=%s", test.article_id)
+		req, err := http.NewRequest("GET", route, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		handlers := dbStruct{db}
+		handler := http.HandlerFunc(handlers.getArticleByIdAPI)
+		handler.ServeHTTP(rr, req)
+
+		if status := rr.Code; status != http.StatusOK {
+			t.Errorf("expected: %v, received: %v", http.StatusOK, status)
+		}
+
+		strBody := rr.Body.String()
+		response := ArticleResponse{}
+		json.Unmarshal([]byte(strBody), &response)
+
+		assert.Equal(t, test.status, response.Status)
+		assert.Equal(t, test.count, response.Count)
 	}
-
-	strBody := rr.Body.String()
-	response := ArticleResponse{}
-	json.Unmarshal([]byte(strBody), &response)
-
-	assert.EqualValues(t, 1, response.Count)
-	assert.Equal(t, a1.Id, response.Articles[0].Id)
 }
 
 func TestInsertArticleAPI(t *testing.T) {
