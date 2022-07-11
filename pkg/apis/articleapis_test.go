@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -80,7 +81,6 @@ func TestHealth(t *testing.T) {
 	}
 }
 
-// figure out how to test DB connections as well
 func TestGetAllArticlesAPI(t *testing.T) {
 	db, mock := NewMock()
 	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
@@ -115,11 +115,10 @@ func TestGetArticleByIDAPI(t *testing.T) {
 	db, mock := NewMock()
 	qryTxt := `SELECT * FROM article WHERE article_id = $1`
 	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
-		AddRow(as[0].Id, as[0].Title, as[0].Desc, as[0].Title).
-		AddRow(as[1].Id, as[1].Title, as[1].Desc, as[1].Title)
+		AddRow(as[0].Id, as[0].Title, as[0].Desc, as[0].Title)
 	mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(a1.Id).WillReturnRows(rows)
 
-	req, err := http.NewRequest("GET", "/articles/list?id=art_1", nil)
+	req, err := http.NewRequest("GET", "/articles/fetch?article_id=art_1", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -137,38 +136,37 @@ func TestGetArticleByIDAPI(t *testing.T) {
 	response := ArticleResponse{}
 	json.Unmarshal([]byte(strBody), &response)
 
-	assert.EqualValues(t, 2, response.Count)
+	assert.EqualValues(t, 1, response.Count)
 	assert.Equal(t, a1.Id, response.Articles[0].Id)
 }
 
-// TODO solve issue of random id val
-// func TestInsertArticleAPI(t *testing.T) {
-// 	db, mock := NewMock()
-// 	qryTxt := `INSERT into "article"(articletitle, articledesc, articlecontent) VALUES($1, $2, $3) RETURNING *`
+func TestInsertArticleAPI(t *testing.T) {
+	db, mock := NewMock()
+	qryTxt := `INSERT into "article"(articletitle, articledesc, articlecontent) VALUES($1, $2, $3) RETURNING *`
 
-// 	// TODO: is this the correct way? Am I creating the new rows before even inserting?
-// 	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
-// 		AddRow(ia1.Id, ia1.Title, ia1.Desc, ia1.Content)
-// 	mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(ia1.Title, ia1.Desc, ia1.Content).WillReturnRows(rows)
+	rows := sqlmock.NewRows([]string{"article_id", "articleTitle", "articleDesc", "articleContent"}).
+		AddRow(ia1.Id, ia1.Title, ia1.Desc, ia1.Content)
+	mock.ExpectQuery(regexp.QuoteMeta(qryTxt)).WithArgs(ia1.Title, ia1.Desc, ia1.Content).WillReturnRows(rows)
 
-// 	bdyReader := strings.NewReader(`{"articleTitle": "iTitle", "articleDesc": "iDesc", "articleContent": "iContent"}`)
-// 	req, err := http.NewRequest("POST", "/articles/insert", bdyReader)
-// 	if err != nil {
-// 		t.Fatal(err)
-// 	}
+	bdyReader := strings.NewReader(`{"articleTitle": "iTitle", "articleDesc": "iDesc", "articleContent": "iContent"}`)
+	req, err := http.NewRequest("POST", "/articles/insert", bdyReader)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-// 	rr := httptest.NewRecorder()
-// 	handlers := dbStruct{db}
-// 	handler := http.HandlerFunc(handlers.insertArticleAPI)
-// 	handler.ServeHTTP(rr, req)
+	rr := httptest.NewRecorder()
+	handlers := dbStruct{db}
+	handler := http.HandlerFunc(handlers.insertArticleAPI)
+	handler.ServeHTTP(rr, req)
 
-// 	if status := rr.Code; status != http.StatusOK {
-// 		t.Errorf("expected: %v, received: %v", http.StatusOK, status)
-// 	}
+	if status := rr.Code; status != http.StatusOK {
+		t.Errorf("expected: %v, received: %v", http.StatusOK, status)
+	}
 
-// 	strBody := rr.Body.String()
-// 	response := ArticleResponse{}
-// 	json.Unmarshal([]byte(strBody), &response)
+	strBody := rr.Body.String()
+	response := ArticleResponse{}
+	json.Unmarshal([]byte(strBody), &response)
 
-// 	// TODO: add assertions
-// }
+	assert.Equal(t, "Success", response.Status)
+	assert.Equal(t, 200, response.Code)
+}
